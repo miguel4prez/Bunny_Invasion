@@ -34,6 +34,7 @@ bg_scroll = 0
 level = 1
 start_game = False
 death_counter = 0
+total_kills = 0
 
 ## action variables
 moving_left = False
@@ -67,6 +68,9 @@ walking_fx.set_volume(0.3)
 
 
 # load images
+game_over_img = pygame.image.load('Sprites/Menu/Buttons/game_over.png').convert_alpha()
+game_over_img = pygame.transform.scale(game_over_img, (400, 320))
+
 #button images
 start_img = pygame.image.load('Sprites/Menu/Buttons/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('Sprites/Menu/Buttons/exit_btn.png').convert_alpha()
@@ -147,6 +151,7 @@ class Soldier(pygame.sprite.Sprite):
     self.ammo = ammo
     self.start_ammo = ammo
     self.shoot_cooldown = 0
+    self.max_ammo = 20
     self.health = 100
     self.max_health = self.health
     self.direction = 1
@@ -157,7 +162,6 @@ class Soldier(pygame.sprite.Sprite):
     self.animation_list = []
     self.frame_index = 0
     self.action = 0
-    self.kills = 0
     self.update_time = pygame.time.get_ticks()
 
     #AI specific variables
@@ -260,7 +264,7 @@ class Soldier(pygame.sprite.Sprite):
       level_complete = True
     
     if self.rect.bottom > SCREEN_HEIGHT:
-      self.heatlh = 0
+      self.health = 0
       player.alive = False
       falling_fx.play()
 
@@ -486,6 +490,8 @@ class ItemBox(pygame.sprite.Sprite):
           player.health = player.max_health
       elif self.item_type == 'Ammo':
         player.ammo += 15
+        if player.ammo > player.max_ammo:
+          player.ammo = player.max_ammo
       self.kill()
 
 #################################################################################################
@@ -542,10 +548,9 @@ class Bullet(pygame.sprite.Sprite):
             if enemy.health <= 0:
               enemy.alive = False
               enemy.update_action(3)
-              player.kills += 1
+              global total_kills
+              total_kills += 1
             self.kill()
-        if level_complete:
-          player.kills = player.kills
             
 
     # fire countdown
@@ -617,7 +622,7 @@ while run:
     for x in range(player.ammo):
       screen.blit(ammo_box_img, (135 + (x * 15), 50))
     draw_text(f'Deaths: {death_counter}', font, WHITE, 640, 10)
-    draw_text(f'Kills: {player.kills}', font, WHITE, 640, 60)
+    draw_text(f'Kills: {total_kills}', font, WHITE, 640, 60)
   
     player.update()
     player.draw()
@@ -658,7 +663,6 @@ while run:
       bg_scroll -= screen_scroll
       if level_complete:
         level += 1
-        death_counter = 0
         bg_scroll = 0
         world_data = reset_level()
         if level <= MAX_LEVELS:
@@ -669,6 +673,7 @@ while run:
                 world_data[x][y] = int(tile)
           world = World()
           player, health_bar = world.process_data(world_data)
+
     else:
       screen_scroll = 0
       if restart_button.draw(screen):
@@ -682,6 +687,15 @@ while run:
               world_data[x][y] = int(tile)
           world = World()
           player, health_bar = world.process_data(world_data)
+
+    if level > MAX_LEVELS:
+          screen.fill('#211F30')
+          screen.blit(game_over_img, (200,0))
+          draw_text('STATS', font, WHITE, 335, 450)
+          draw_text(f'Deaths: {death_counter}', font, WHITE, 320, 500)
+          draw_text(f'Kills: {total_kills}', font, WHITE, 320, 550)
+          if exit_button.draw(screen):
+            run = False
 
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
