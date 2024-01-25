@@ -1,4 +1,5 @@
 import pygame
+from pygame import mixer
 import os
 import random
 import csv
@@ -6,6 +7,7 @@ import button
 
 # sprite link https://pixelfrog-assets.itch.io/pixel-adventure-1?download#google_vignette
 
+mixer.init()
 pygame.init()
 
 
@@ -31,6 +33,7 @@ screen_scroll = 0
 bg_scroll = 0
 level = 1
 start_game = False
+death_counter = 0
 
 ## action variables
 moving_left = False
@@ -45,8 +48,25 @@ for x in range(TILE_TYPES):
   img = pygame.transform.scale(img, (TILE_SIZE, TILE_SIZE))
   img_list.append(img)
 
-# load images
+# Load Music
+pygame.mixer.music.load('audio/Cloudy_Sleeze.wav')
+pygame.mixer.music.set_volume(0.3)
+pygame.mixer.music.play(-1, 0.0, 5000)
 
+jump_fx = pygame.mixer.Sound('audio/jump.wav')
+jump_fx.set_volume(0.5)
+shot_fx = pygame.mixer.Sound('audio/shot.wav')
+shot_fx.set_volume(0.3)
+water_fx = pygame.mixer.Sound('audio/water_splash.wav')
+water_fx.set_volume(0.2)
+falling_fx = pygame.mixer.Sound('audio/falling_fx.wav')
+falling_fx.set_volume(0.2)
+walking_fx = pygame.mixer.Sound('audio/walking.wav')
+walking_fx.set_volume(0.3)
+
+
+
+# load images
 #button images
 start_img = pygame.image.load('Sprites/Menu/Buttons/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('Sprites/Menu/Buttons/exit_btn.png').convert_alpha()
@@ -58,6 +78,8 @@ pine2_img = pygame.image.load('Sprites/background/pine2.png').convert_alpha()
 mountain_img = pygame.image.load('Sprites/background/mountains.png').convert_alpha()
 sky_img = pygame.image.load('Sprites/background/sky_cloud.png').convert_alpha()
 
+main_menu_background = pygame.image.load('BG.png').convert_alpha()
+
   
 # bullet
 bullet_img = pygame.image.load('Sprites/Fire/fire_bullet.png').convert_alpha()
@@ -65,6 +87,7 @@ bullet_img = pygame.image.load('Sprites/Fire/fire_bullet.png').convert_alpha()
 #items
 health_box_img = pygame.image.load('Sprites/Fruits/Apple_Animation/0.png').convert_alpha()
 ammo_box_img = pygame.image.load('Sprites/Fire/Fire_Ammo/0.png').convert_alpha()
+
 
 item_boxes = {
   'Health': health_box_img,
@@ -88,7 +111,7 @@ def draw_text(text, font, text_col, x, y):
 
 def draw_bg():
   screen.fill(BG)
-  width = sky_img.get_width()
+  width = mountain_img.get_width()
   for x in range(5):
     screen.blit(sky_img, ((x * width) - bg_scroll * 0.5, 0))
     screen.blit(mountain_img, ((x * width) - bg_scroll * 0.6, SCREEN_HEIGHT - mountain_img.get_height() - 300))
@@ -134,6 +157,7 @@ class Soldier(pygame.sprite.Sprite):
     self.animation_list = []
     self.frame_index = 0
     self.action = 0
+    self.kills = 0
     self.update_time = pygame.time.get_ticks()
 
     #AI specific variables
@@ -215,20 +239,21 @@ class Soldier(pygame.sprite.Sprite):
             dy = tile[1].top - self.rect.bottom
     else:
       dy = 5
+      falling_fx.play()
     
     if self.char_type == 'Mask_Dude':
       if self.rect.left + dx < 0 or self.rect.right + dx > SCREEN_WIDTH:
         dx = 0
-  
 
     # update rectangle position
     self.rect.x += dx
     self.rect.y += dy
 
-
     # check collision with water
     if pygame.sprite.spritecollide(self, water_group, False):
       self.health = 0
+      water_fx.play()
+      falling_fx.play()
 
     level_complete = False
     if pygame.sprite.spritecollide(self, exit_group, False):
@@ -237,6 +262,7 @@ class Soldier(pygame.sprite.Sprite):
     if self.rect.bottom > SCREEN_HEIGHT:
       self.heatlh = 0
       player.alive = False
+      falling_fx.play()
 
     # update scroll
     if self.char_type == 'Mask_Dude':
@@ -254,6 +280,7 @@ class Soldier(pygame.sprite.Sprite):
         bullet_group.add(bullet)
         #reduce ammo
         self.ammo -= 1
+        shot_fx.play()
 
   def ai(self):
     if self.alive and player.alive:
@@ -291,7 +318,6 @@ class Soldier(pygame.sprite.Sprite):
     #scroll
     self.rect.x += screen_scroll
 
-    
 
   def update_animation(self):
     #update animation
@@ -513,7 +539,14 @@ class Bullet(pygame.sprite.Sprite):
       if pygame.sprite.spritecollide(enemy, bullet_group, False):
         if enemy.alive:
             enemy.health -= 25
+            if enemy.health <= 0:
+              enemy.alive = False
+              enemy.update_action(3)
+              player.kills += 1
             self.kill()
+        if level_complete:
+          player.kills = player.kills
+            
 
     # fire countdown
     self.timer -= 1
@@ -524,9 +557,9 @@ class Bullet(pygame.sprite.Sprite):
 #################################################################################################
       
 # Create Buttons 
-start_button = button.Button(SCREEN_WIDTH // 2 - 130, SCREEN_HEIGHT // 2 - 150, start_img, 1)
-exit_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 + 50, exit_img, 1)
-restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 2)
+start_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 - 70, start_img, 0.7)
+exit_button = button.Button(SCREEN_WIDTH // 2 - 108, SCREEN_HEIGHT // 2 + 20, exit_img, 0.7)
+restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 0.7)
 
 
 # create sprite groups
@@ -556,13 +589,14 @@ with open(f'level{level}_data.csv', newline='') as csvfile:
 world = World()
 player, health_bar = world.process_data(world_data)
 
+
 run = True
 while run:  
 
   clock.tick(FPS)
   if start_game == False:
     # draw menu
-    screen.fill(BG)
+    screen.blit(main_menu_background, (0, 0))
     if start_button.draw(screen):
       start_game = True
     if exit_button.draw(screen):
@@ -582,8 +616,8 @@ while run:
     draw_text(f'AMMO: ', font, WHITE, 10, 35)
     for x in range(player.ammo):
       screen.blit(ammo_box_img, (135 + (x * 15), 50))
-
-
+    draw_text(f'Deaths: {death_counter}', font, WHITE, 640, 10)
+    draw_text(f'Kills: {player.kills}', font, WHITE, 640, 60)
   
     player.update()
     player.draw()
@@ -592,7 +626,6 @@ while run:
       enemy.update()
       enemy.draw()
       enemy.ai()
-
 
   #group updates
     bullet_group.update()
@@ -625,6 +658,7 @@ while run:
       bg_scroll -= screen_scroll
       if level_complete:
         level += 1
+        death_counter = 0
         bg_scroll = 0
         world_data = reset_level()
         if level <= MAX_LEVELS:
@@ -639,6 +673,7 @@ while run:
       screen_scroll = 0
       if restart_button.draw(screen):
         bg_scroll = 0
+        death_counter += 1  
         world_data = reset_level()
         with open(f'level{level}_data.csv', newline='') as csvfile:
           reader = csv.reader(csvfile, delimiter=',')
@@ -648,8 +683,6 @@ while run:
           world = World()
           player, health_bar = world.process_data(world_data)
 
-  
-
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
       run = False
@@ -658,12 +691,15 @@ while run:
     if event.type == pygame.KEYDOWN:
       if event.key == pygame.K_a:
         moving_left = True
+        walking_fx.play()
       if event.key == pygame.K_d:
         moving_right = True
+        walking_fx.play()
       if event.key == pygame.K_SPACE:
         shoot = True
       if event.key == pygame.K_w and player.alive:
         player.jump = True
+        jump_fx.play()
       if event.key == pygame.K_ESCAPE:
         run = False
 
@@ -675,7 +711,6 @@ while run:
         moving_right = False
       if event.key == pygame.K_SPACE:
         shoot = False
-
 
   pygame.display.update()
 
