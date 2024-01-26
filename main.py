@@ -55,11 +55,11 @@ pygame.mixer.music.set_volume(0.3)
 pygame.mixer.music.play(-1, 0.0, 5000)
 
 jump_fx = pygame.mixer.Sound('audio/jump.wav')
-jump_fx.set_volume(0.5)
+jump_fx.set_volume(0.3)
 shot_fx = pygame.mixer.Sound('audio/shot.wav')
-shot_fx.set_volume(0.3)
+shot_fx.set_volume(0.2)
 water_fx = pygame.mixer.Sound('audio/water_splash.wav')
-water_fx.set_volume(0.2)
+water_fx.set_volume(0.3)
 falling_fx = pygame.mixer.Sound('audio/falling_fx.wav')
 falling_fx.set_volume(0.2)
 walking_fx = pygame.mixer.Sound('audio/walking.wav')
@@ -540,6 +540,7 @@ class Bullet(pygame.sprite.Sprite):
       if player.alive:
         player.health -= 5
         self.kill()
+        falling_fx.play()
 
     for enemy in enemy_group:
       if pygame.sprite.spritecollide(enemy, bullet_group, False):
