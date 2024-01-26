@@ -35,6 +35,7 @@ level = 1
 start_game = False
 death_counter = 0
 total_kills = 0
+music_paused = True
 
 ## action variables
 moving_left = False
@@ -75,6 +76,7 @@ game_over_img = pygame.transform.scale(game_over_img, (400, 320))
 start_img = pygame.image.load('Sprites/Menu/Buttons/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('Sprites/Menu/Buttons/exit_btn.png').convert_alpha()
 restart_img = pygame.image.load('Sprites/Menu/Buttons/restart_btn.png').convert_alpha()
+audio_img = pygame.image.load('Sprites/audio_logo.png').convert_alpha()
 
 # background
 pine1_img = pygame.image.load('Sprites/background/pine1.png').convert_alpha()
@@ -566,6 +568,7 @@ class Bullet(pygame.sprite.Sprite):
 start_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 - 70, start_img, 0.7)
 exit_button = button.Button(SCREEN_WIDTH // 2 - 108, SCREEN_HEIGHT // 2 + 20, exit_img, 0.7)
 restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 0.7)
+audio_btn = button.Button(10, 120, audio_img, 0.02)
 
 
 # create sprite groups
@@ -614,6 +617,15 @@ while run:
 
     world.draw()
 
+    # Music on or off
+    if audio_btn.draw(screen):
+      if music_paused:
+          pygame.mixer.music.pause()
+      else:
+          pygame.mixer.music.unpause()
+      music_paused = not music_paused
+    
+  
     #health bar
     health_bar.draw(player.health)
     #show health
