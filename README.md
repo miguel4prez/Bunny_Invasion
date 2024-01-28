@@ -50,3 +50,9 @@ The game consists of multiple levels, each with its own challenges. Progress thr
 If Mask Dude's health reaches zero, the game will end. You can restart the level to try again.
 
 Have fun playing **Bunny Invasion**!
+
+# Credits
+
+World Sprties by https://free-game-assets.itch.io/free-exclusion-zone-tileset-pixel-art
+
+Character Sprites by https://pixelfrog-assets.itch.io/pixel-adventure-1
