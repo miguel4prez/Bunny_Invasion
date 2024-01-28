@@ -5,11 +5,8 @@ import random
 import csv
 import button
 
-# sprite link https://pixelfrog-assets.itch.io/pixel-adventure-1?download#google_vignette
-
 mixer.init()
 pygame.init()
-
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
@@ -36,12 +33,12 @@ start_game = False
 death_counter = 0
 total_kills = 0
 music_paused = True
+keep_playing = False
 
 ## action variables
 moving_left = False
 moving_right = False
 shoot = False
-
 
 # store tiles in a list
 img_list = []
@@ -66,8 +63,6 @@ falling_fx.set_volume(0.2)
 walking_fx = pygame.mixer.Sound('audio/walking.wav')
 walking_fx.set_volume(0.3)
 
-
-
 # load images
 game_over_img = pygame.image.load('Sprites/Menu/Buttons/game_over.png').convert_alpha()
 game_over_img = pygame.transform.scale(game_over_img, (400, 320))
@@ -85,7 +80,6 @@ mountain_img = pygame.image.load('Sprites/background/mountains.png').convert_alp
 sky_img = pygame.image.load('Sprites/background/sky_cloud.png').convert_alpha()
 
 main_menu_background = pygame.image.load('BG.png').convert_alpha()
-
   
 # bullet
 bullet_img = pygame.image.load('Sprites/Fire/fire_bullet.png').convert_alpha()
@@ -94,12 +88,10 @@ bullet_img = pygame.image.load('Sprites/Fire/fire_bullet.png').convert_alpha()
 health_box_img = pygame.image.load('Sprites/Fruits/Apple_Animation/0.png').convert_alpha()
 ammo_box_img = pygame.image.load('Sprites/Fire/Fire_Ammo/0.png').convert_alpha()
 
-
 item_boxes = {
   'Health': health_box_img,
   'Ammo': ammo_box_img
 }
-
 
 # define colors
 BG= (144, 201, 120)
@@ -110,10 +102,13 @@ BLACK = (0, 0, 0)
 
 # define font
 font = pygame.font.SysFont('Futura', 30)
+sub_font = pygame.font.SysFont('Futura', 15)
+sub_text = sub_font.render('https://github.com/miguel4prez', False, WHITE, None)
 
 def draw_text(text, font, text_col, x, y):
   img = font.render(text, True, text_col)
   screen.blit(img, (x, y))
+
 
 def draw_bg():
   screen.fill(BG)
@@ -356,6 +351,7 @@ class Soldier(pygame.sprite.Sprite):
       self.speed = 0
       self.alive = False
       self.update_action(3)
+      # falling_fx.play()
 
   def draw(self):
     screen.blit(pygame.transform.flip(self.img, self.flip, False),  self.rect)
@@ -542,7 +538,6 @@ class Bullet(pygame.sprite.Sprite):
       if player.alive:
         player.health -= 5
         self.kill()
-        falling_fx.play()
 
     for enemy in enemy_group:
       if pygame.sprite.spritecollide(enemy, bullet_group, False):
@@ -566,6 +561,7 @@ class Bullet(pygame.sprite.Sprite):
       
 # Create Buttons 
 start_button = button.Button(SCREEN_WIDTH // 2 - 110, SCREEN_HEIGHT // 2 - 70, start_img, 0.7)
+
 exit_button = button.Button(SCREEN_WIDTH // 2 - 108, SCREEN_HEIGHT // 2 + 20, exit_img, 0.7)
 restart_button = button.Button(SCREEN_WIDTH // 2 - 100, SCREEN_HEIGHT // 2 - 50, restart_img, 0.7)
 audio_btn = button.Button(10, 120, audio_img, 0.02)
@@ -604,15 +600,15 @@ while run:
 
   clock.tick(FPS)
   if start_game == False:
-    # draw menu
+    ### Main Menu ##
     screen.blit(main_menu_background, (0, 0))
     if start_button.draw(screen):
       start_game = True
     if exit_button.draw(screen):
       run = False
-
-  else: 
-  #udate background
+    screen.blit(sub_text, (285, 550))
+  else:
+  ## Game Start ##
     draw_bg()
 
     world.draw()
@@ -625,6 +621,9 @@ while run:
           pygame.mixer.music.unpause()
       music_paused = not music_paused
     
+    if music_paused == False:
+      pygame.draw.line(screen, RED, (5 , 150), (45, 120), width=5)
+      pygame.draw.line(screen, RED, (5, 120), (45, 150), width=5)
   
     #health bar
     health_bar.draw(player.health)
@@ -701,6 +700,7 @@ while run:
           world = World()
           player, health_bar = world.process_data(world_data)
 
+    #### Exit Menu ####
     if level > MAX_LEVELS:
           screen.fill('#211F30')
           screen.blit(game_over_img, (200,0))
@@ -716,17 +716,22 @@ while run:
 
       #player movement
     if event.type == pygame.KEYDOWN:
+      if event.key == pygame.K_RETURN:
+        start_game = True
       if event.key == pygame.K_a:
         moving_left = True
-        walking_fx.play()
+        if start_game == True:
+          walking_fx.play()
       if event.key == pygame.K_d:
         moving_right = True
-        walking_fx.play()
+        if start_game == True:
+          walking_fx.play()
       if event.key == pygame.K_SPACE:
         shoot = True
       if event.key == pygame.K_w and player.alive:
         player.jump = True
-        jump_fx.play()
+        if start_game == True:
+          jump_fx.play()
       if event.key == pygame.K_ESCAPE:
         run = False
 
